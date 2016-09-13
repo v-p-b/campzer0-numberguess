@@ -53,7 +53,6 @@ def synalgo(game):
 
     return game.getcost()
 
-
 def naive(game):
     for i in xrange(0, game.N+1):
         if game.equals(i):
@@ -75,8 +74,23 @@ def cj(game,start,end):
     else:
         return cj(game,newend,end)
 
+def ew(game,start,end):
+    newend=start+int((end-start)*0.165)
+    if newend==start:
+        for i in xrange(start,end+1):
+            if game.equals(i):
+                return game.getcost()
+        raise Exception("ew failed :(")
+
+    if game.ininterval(start,newend):
+        return ew(game,start,newend)
+    else:
+        return ew(game,newend,end)
+
+
+
 MAX = 10000
-BOUND = 200
+BOUND = 10000
 
 s = 0
 for i in xrange(0, MAX):
@@ -88,8 +102,12 @@ for i in xrange(0, MAX):
     s += synalgo(guess(BOUND))
 print "synapse average of", MAX, "runs:", float(s)/MAX
 
-
 s=0
 for i in xrange(0,MAX):
     s+= cj(guess(BOUND),0,BOUND)
 print "cj average of", MAX, "runs:", float(s)/MAX
+
+s=0
+for i in xrange(0,MAX):
+    s+= ew(guess(BOUND),0,BOUND)
+print "ew average of", MAX, "runs:", float(s)/MAX
