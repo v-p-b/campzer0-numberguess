@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import random, math
+import scipy.optimize as opt
 
 class guess:
     def __init__(self, N, costgood=10, costbad=1):
@@ -74,8 +75,8 @@ def cj(game,start,end):
     else:
         return cj(game,newend,end)
 
-def ew(game,start,end):
-    newend=start+int((end-start)*0.165)
+def ew(game,ew_opt,start,end):
+    newend=start+int((end-start)*ew_opt)
     if newend==start:
         for i in xrange(start,end+1):
             if game.equals(i):
@@ -83,31 +84,39 @@ def ew(game,start,end):
         raise Exception("ew failed :(")
 
     if game.ininterval(start,newend):
-        return ew(game,start,newend)
+        return ew(game,ew_opt,start,newend)
     else:
-        return ew(game,newend,end)
+        return ew(game,ew_opt,newend,end)
 
 
 
-MAX = 10000
+MAX = 1000
 BOUND = 10000
+COSTGOOD=10
+COSTBAD=1
+PENALTY=COSTGOOD-COSTBAD
+
+def ew_f(e):
+    return e-(1.0/(1.0+math.pow(math.e,(-PENALTY*math.log(1.0-e)))))
+
+ew_opt=opt.fsolve(ew_f,0.5)[0]
 
 s = 0
 for i in xrange(0, MAX):
-    s += naive(guess(BOUND))
+    s += naive(guess(BOUND, COSTGOOD, COSTBAD))
 print "naive average of", MAX, "runs:", float(s)/MAX
 
 s=0
 for i in xrange(0, MAX):
-    s += synalgo(guess(BOUND))
+    s += synalgo(guess(BOUND,COSTGOOD,COSTBAD))
 print "synapse average of", MAX, "runs:", float(s)/MAX
 
 s=0
 for i in xrange(0,MAX):
-    s+= cj(guess(BOUND),0,BOUND)
+    s+= cj(guess(BOUND,COSTGOOD,COSTBAD),0,BOUND)
 print "cj average of", MAX, "runs:", float(s)/MAX
 
 s=0
 for i in xrange(0,MAX):
-    s+= ew(guess(BOUND),0,BOUND)
+    s+= ew(guess(BOUND,COSTGOOD,COSTBAD),ew_opt,0,BOUND)
 print "ew average of", MAX, "runs:", float(s)/MAX
