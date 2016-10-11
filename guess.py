@@ -2,6 +2,7 @@
 
 import random, math
 import scipy.optimize as opt
+import argparse
 
 class guess:
     def __init__(self, N, costgood=10, costbad=1):
@@ -40,9 +41,11 @@ def synalgo(game):
             start = guess
         if end-start == 1:
             if game.equals(start):
-                print "N is", start
+                #print "N is", start
+                pass
             else:
-                print "N is", end
+                #print "N is", end
+                pass
             found = True
             break
 
@@ -50,8 +53,9 @@ def synalgo(game):
         # linear search
         for i in xrange(start, end+1):
             if game.equals(i):
+                found=True
                 break
-
+    if not found: raise Exception("synalgo failed :(")
     return game.getcost()
 
 def naive(game):
@@ -62,8 +66,8 @@ def naive(game):
 
 
 def cj(game,start,end):
-    chunksize = game.goodcost / game.badcost
-    newend=start+(end-start)/chunksize
+    chunksize = float(game.goodcost) / float(game.badcost)
+    newend=start+int((end-start)/chunksize)
     if newend==start:
         for i in xrange(start,end+1):
             if game.equals(i):
@@ -88,23 +92,39 @@ def ew(game,ew_opt,start,end):
     else:
         return ew(game,ew_opt,newend,end)
 
+parser = argparse.ArgumentParser(description='Number guessing game simulator')
+parser.add_argument("--bound",default=10000,type=int,help="Upper bound of the guess")
+parser.add_argument("--good",default=10,type=float,help="Cost of positive answers (should be higher than --bad)")
+parser.add_argument("--bad",default=1,type=float,help="Cost of negative answers (should be lower than --good)")
 
+args = parser.parse_args()
 
 MAX = 1000
-BOUND = 10000
-COSTGOOD=10
-COSTBAD=1
-PENALTY=COSTGOOD-COSTBAD
+BOUND = args.bound
+COSTGOOD = args.good
+COSTBAD = args.bad
+PENALTY = COSTGOOD-COSTBAD
+
 
 def ew_f(e):
     return e-(1.0/(1.0+math.pow(math.e,(-PENALTY*math.log(1.0-e)))))
 
 ew_opt=opt.fsolve(ew_f,0.5)[0]
 
+# Execute
+
+print "Iterations\tUpper bound\tPenalty"
+print "%d\t\t%d\t\t%f" % (MAX,BOUND,PENALTY)
+print "\nEW calculated: %f\n" % ew_opt
 s = 0
 for i in xrange(0, MAX):
     s += naive(guess(BOUND, COSTGOOD, COSTBAD))
 print "naive average of", MAX, "runs:", float(s)/MAX
+
+s=0
+for i in xrange(0,MAX):
+    s+= ew(guess(BOUND,COSTGOOD,COSTBAD),0.5,0,BOUND)
+print "binary average of", MAX, "runs:", float(s)/MAX
 
 s=0
 for i in xrange(0, MAX):
@@ -120,3 +140,4 @@ s=0
 for i in xrange(0,MAX):
     s+= ew(guess(BOUND,COSTGOOD,COSTBAD),ew_opt,0,BOUND)
 print "ew average of", MAX, "runs:", float(s)/MAX
+
